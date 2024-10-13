@@ -7,7 +7,7 @@ use aws_sdk_dynamodb::Client;
 use env_logger;
 use actix_web::web::Data;
 use actix_web::{App, HttpServer};
-use crate::services::{UserService, UserServiceImpl, register, login};
+use crate::services::{UserService, UserServiceImpl, register, login, register_vehicle};
 use std::sync::Arc; // Import Arc
 
 #[actix_web::main]
@@ -34,12 +34,6 @@ async fn main() -> std::io::Result<()> {
         table_name: String::from("user-info"), // Ensure this matches your table name
     };
 
-    let result = user_service.clone().insert_sample_user().await; // Use Arc here
-    match result {
-        Ok(_) => println!("Sample user inserted successfully!"),
-        Err(err) => println!("Error inserting sample user: {}", err),
-    }
-
     // Start the HTTP server
     HttpServer::new(move || {
         let user_service_arc: Arc<dyn UserService> = Arc::new(user_service.clone());
@@ -47,6 +41,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(user_service_data) // Register user_service
             .service(register) // Register the register endpoint
+            .service(register_vehicle) // Register the vehicle endpoint
             .service(login) // Register the login endpoint
     })
     .bind("127.0.0.1:8081")? // Handle potential bind errors
