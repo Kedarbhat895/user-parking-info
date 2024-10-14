@@ -1,17 +1,8 @@
-use actix_web::{HttpRequest, post, web, HttpResponse, Responder};
+use actix_web::{post, web, HttpRequest, HttpResponse, Responder};
 use crate::models::{User, LoginRequest, VehicleRegistrationInfo};
 use crate::services::UserService;
-use jsonwebtoken::{encode, decode, Header, EncodingKey, DecodingKey, Validation};
-use serde::{Serialize, Deserialize};
+use crate::utils::auth::{Claims, extract_token, decode_token, SECRET};
 use log::{info, error};
-
-#[derive(Serialize, Deserialize)]
-struct Claims {
-    sub: String,
-    exp: usize,
-}
-
-const SECRET: &str = "your_secret";
 
 #[post("/register")]
 pub async fn register(
@@ -42,7 +33,7 @@ pub async fn login(
                     sub: username,
                     exp: 10000000000, // Set expiration as needed
                 };
-                let token = encode(&Header::default(), &claims, &EncodingKey::from_secret(SECRET.as_ref()))
+                let token = jsonwebtoken::encode(&jsonwebtoken::Header::default(), &claims, &jsonwebtoken::EncodingKey::from_secret(SECRET.as_ref()))
                     .map_err(|_| HttpResponse::InternalServerError().body("Error generating token"));
                 if let Ok(token) = token {
                     HttpResponse::Ok().json(token)
@@ -67,23 +58,11 @@ pub async fn register_vehicle(
     data: web::Data<dyn UserService>, 
     req: HttpRequest,
 ) -> impl Responder {
-    let token_value = req.headers()
-        .get("Authorization")
-        .and_then(|h| h.to_str().ok()) // Convert to string safely
-        .and_then(|s| s.strip_prefix("Bearer ")) // Remove "Bearer " prefix if present
-        .unwrap_or("") // Default to empty string if not found
-        .to_string();
+    let token_value = extract_token(&req).unwrap_or_default();
 
-    let decoded = match decode::<Claims>(
-        &token_value,
-        &DecodingKey::from_secret(SECRET.as_ref()),
-        &Validation::default(),
-    ) {
-        Ok(token) => token,
-        Err(_) => return HttpResponse::Unauthorized().body("Invalid token"),
-    };
+    let decoded = decode_token(&token_value);
+    let email = decoded.unwrap().sub;
 
-    let email = decoded.claims.sub;
     info!("Received vehicle registration request for user: {}", email);
     match data.get_user(&email).await {
         Ok(Some(mut db_user)) => {

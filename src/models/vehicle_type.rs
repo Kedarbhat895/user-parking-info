@@ -2,7 +2,6 @@ use std::str::FromStr;
 use std::fmt;
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum VehicleType {
     SMALL,
@@ -12,7 +11,7 @@ pub enum VehicleType {
 
 impl FromStr for VehicleType {
     type Err = String;
-
+    
     fn from_str(s: &str) -> Result<VehicleType, Self::Err> {
         match s.to_uppercase().as_str() {
             "SMALL" => Ok(VehicleType::SMALL),
@@ -29,9 +28,9 @@ impl fmt::Display for VehicleType {
             f,
             "{}",
             match self {
-                VehicleType::SMALL => "SMALL",
-                VehicleType::MEDIUM => "MEDIUM",
-                VehicleType::LARGE => "LARGE",
+                VehicleType::SMALL => "Small",
+                VehicleType::MEDIUM => "Medium",
+                VehicleType::LARGE => "Large",
             }
         )
     }

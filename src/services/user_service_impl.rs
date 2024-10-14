@@ -6,10 +6,11 @@ use aws_sdk_dynamodb::types::AttributeValue;
 use crate::models::VehicleType;
 use std::str::FromStr;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct UserServiceImpl {
-    pub client: Client,
+    pub client: Arc<Client>,
     pub table_name: String,
 }
 
